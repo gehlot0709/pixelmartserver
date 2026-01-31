@@ -13,11 +13,27 @@ connectDB();
 // Middleware
 app.use(express.json());
 app.use(cors({
-    origin: [
-        "http://localhost:5173",
-        "https://pixelmart-eta.vercel.app"
-    ],
-    credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        const allowedOrigins = [
+            "http://localhost:5173",
+            "http://localhost:5000",
+            "https://pixelmart-eta.vercel.app",
+        ];
+
+        // Check if origin is in allowedOrigins or matches dynamic regex for Vercel previews
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            console.log("Blocked by CORS:", origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Static folder for uploads (if needed later)

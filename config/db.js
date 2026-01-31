@@ -17,6 +17,7 @@ const connectDB = async () => {
             bufferCommands: true, // Re-enable buffering to avoid race conditions
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
+            family: 4 // Force IPv4 to prevent Vercel DNS resolution issues
         };
 
         cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongoose) => {
