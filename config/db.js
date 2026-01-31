@@ -14,8 +14,8 @@ const connectDB = async () => {
 
     if (!cached.promise) {
         const opts = {
-            bufferCommands: false, // Disable buffering to fail fast if not connected
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+            bufferCommands: true, // Re-enable buffering to avoid race conditions
+            serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
         };
 

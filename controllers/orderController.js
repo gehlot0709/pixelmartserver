@@ -50,13 +50,17 @@ exports.addOrderItems = async (req, res) => {
 
         const createdOrder = await order.save();
 
-        // Send Email
-        const message = `Thank you for your order! Order ID: ${createdOrder._id}. Total: ${totalPrice}`;
-        await sendEmail({
-            email: req.user.email,
-            subject: 'Order Confirmation - PixelMart',
-            message
-        });
+        // Send Email (fail silently if email service is down)
+        try {
+            const message = `Thank you for your order! Order ID: ${createdOrder._id}. Total: ${totalPrice}`;
+            await sendEmail({
+                email: req.user.email,
+                subject: 'Order Confirmation - PixelMart',
+                message
+            });
+        } catch (emailError) {
+            console.error("Email sending failed:", emailError.message);
+        }
 
         res.status(201).json(createdOrder);
     } catch (error) {

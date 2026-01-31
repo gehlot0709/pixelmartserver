@@ -3,7 +3,7 @@ const path = require('path');
 
 // Set storage engine
 const storage = multer.diskStorage({
-    destination: './server/uploads/', // Ensure this path matches your structure
+    destination: '/tmp', // Vercel only allows writing to /tmp
     filename: function (req, file, cb) {
         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
     }
