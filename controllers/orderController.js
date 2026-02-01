@@ -120,8 +120,8 @@ exports.addOrderItems = async (req, res) => {
 
         res.status(201).json(createdOrder);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Order Creation Error:", error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
