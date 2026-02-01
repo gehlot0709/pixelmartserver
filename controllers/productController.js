@@ -103,7 +103,7 @@ exports.createProduct = async (req, res) => {
 
         let images = [];
         if (req.files) {
-            images = req.files.map(file => `/uploads/${file.filename}`);
+            images = req.files.map(file => file.path); // Cloudinary returns the full URL in file.path
         }
 
         const product = new Product({
@@ -198,7 +198,7 @@ exports.updateProduct = async (req, res) => {
             product.isOffer = isOffer === 'true' || isOffer === true;
 
             if (req.files && req.files.length > 0) {
-                product.images = req.files.map(file => `/uploads/${file.filename}`);
+                product.images = req.files.map(file => file.path); // Cloudinary returns the full URL in file.path
             }
 
             if (sizes !== undefined) {
