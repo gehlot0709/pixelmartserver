@@ -59,8 +59,8 @@ exports.getProducts = async (req, res) => {
 
         res.json({ products, page, pages: Math.ceil(count / pageSize) });
     } catch (error) {
-        console.error("Error in getProducts:", error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -81,8 +81,8 @@ exports.getProductById = async (req, res) => {
             res.status(404).json({ message: 'Product not found' });
         }
     } catch (error) {
-        console.error("Error in getProductById:", error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -116,8 +116,8 @@ exports.createProduct = async (req, res) => {
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
     } catch (error) {
-        console.error("Error in createProduct:", error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
