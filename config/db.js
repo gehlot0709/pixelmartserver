@@ -35,7 +35,7 @@ const connectDB = async () => {
     } catch (e) {
         cached.promise = null;
         console.error(`MongoDB Connection Failed: ${e.message}`);
-        // Let the error bubble up so the request fails 
+        throw e; // Throw so index.js middleware can catch it
     }
 };
 

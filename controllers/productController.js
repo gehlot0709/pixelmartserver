@@ -91,8 +91,15 @@ exports.getProductById = async (req, res) => {
 // @access  Private/Admin
 exports.createProduct = async (req, res) => {
     try {
-        // req.body contains text fields, req.files contains images
         const { title, description, price, category, stock, sizes, colors, deliveryTime, isOffer } = req.body;
+
+        console.log("Creating Product with body:", { title, price, category, stock, sizes, colors, isOffer });
+        console.log("Images received:", req.files ? req.files.length : 0);
+
+        if (!req.user) {
+            console.error("No user found in req.user - product creator missing");
+            return res.status(401).json({ message: 'User context missing' });
+        }
 
         let images = [];
         if (req.files) {
@@ -102,12 +109,12 @@ exports.createProduct = async (req, res) => {
         const product = new Product({
             title,
             description,
-            price,
+            price: Number(price),
             category,
-            stock,
+            stock: Number(stock),
             images,
-            sizes: sizes ? sizes.split(',') : [],
-            colors: colors ? colors.split(',') : [],
+            sizes: sizes ? (typeof sizes === 'string' ? sizes.split(',') : sizes) : [],
+            colors: colors ? (typeof colors === 'string' ? colors.split(',') : colors) : [],
             deliveryTime,
             isOffer: isOffer === 'true' || isOffer === true,
             user: req.user._id
@@ -117,6 +124,10 @@ exports.createProduct = async (req, res) => {
         res.status(201).json(createdProduct);
     } catch (error) {
         console.error("Error in createProduct:", error);
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ message: 'Validation Error', errors: messages });
+        }
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
@@ -171,14 +182,18 @@ exports.createProductReview = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     try {
         const { title, description, price, category, stock, sizes, colors, deliveryTime, isOffer } = req.body;
+
+        console.log("Updating Product ID:", req.params.id);
+        console.log("Update body:", { title, price, category, stock, sizes, colors, isOffer });
+
         const product = await Product.findById(req.params.id);
 
         if (product) {
             product.title = title || product.title;
             product.description = description || product.description;
-            product.price = price || product.price;
+            product.price = price ? Number(price) : product.price;
             product.category = category || product.category;
-            product.stock = stock || product.stock;
+            product.stock = stock ? Number(stock) : product.stock;
             product.deliveryTime = deliveryTime || product.deliveryTime;
             product.isOffer = isOffer === 'true' || isOffer === true;
 
@@ -186,8 +201,12 @@ exports.updateProduct = async (req, res) => {
                 product.images = req.files.map(file => `/uploads/${file.filename}`);
             }
 
-            product.sizes = sizes ? sizes.split(',') : product.sizes;
-            product.colors = colors ? colors.split(',') : product.colors;
+            if (sizes !== undefined) {
+                product.sizes = sizes ? (typeof sizes === 'string' ? sizes.split(',') : sizes) : [];
+            }
+            if (colors !== undefined) {
+                product.colors = colors ? (typeof colors === 'string' ? colors.split(',') : colors) : [];
+            }
 
             const updatedProduct = await product.save();
             res.json(updatedProduct);
@@ -196,6 +215,10 @@ exports.updateProduct = async (req, res) => {
         }
     } catch (error) {
         console.error("Error in updateProduct:", error);
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ message: 'Validation Error', errors: messages });
+        }
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
