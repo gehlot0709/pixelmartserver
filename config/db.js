@@ -14,10 +14,10 @@ const connectDB = async () => {
 
     if (!cached.promise) {
         const opts = {
-            bufferCommands: true, // Re-enable buffering to avoid race conditions
+            bufferCommands: false, // Disable buffering to fail fast on connection errors
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
-            family: 4 // Force IPv4 to prevent Vercel DNS resolution issues
+            family: 4 // Force IPv4
         };
 
         cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongoose) => {
