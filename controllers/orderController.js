@@ -51,12 +51,68 @@ exports.addOrderItems = async (req, res) => {
         const createdOrder = await order.save();
 
         // Send Email (fail silently if email service is down)
+        // Send Email (fail silently if email service is down)
         try {
-            const message = `Thank you for your order! Order ID: ${createdOrder._id}. Total: ${totalPrice}`;
+            const tableRows = orderItems.map(item => `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">
+                        <img src="${process.env.CLIENT_URL || 'http://localhost:5173'}${item.image}" alt="${item.name}" width="50" style="border-radius: 5px;">
+                    </td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.name}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.qty}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.size || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.color || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd;">₹${item.price}</td>
+                </tr>
+            `).join('');
+
+            const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #4F46E5; text-align: center;">Thank You for Your Order!</h2>
+                    <p>Hi ${shippingAddress.name},</p>
+                    <p>We have received your order <strong>#${createdOrder._id}</strong>.</p>
+                    
+                    <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px;">Order Summary</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 10px; text-align: left;">Image</th>
+                                <th style="padding: 10px; text-align: left;">Product</th>
+                                <th style="padding: 10px; text-align: left;">Qty</th>
+                                <th style="padding: 10px; text-align: left;">Size</th>
+                                <th style="padding: 10px; text-align: left;">Color</th>
+                                <th style="padding: 10px; text-align: left;">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+
+                    <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p><strong>Total Price:</strong> ₹${totalPrice}</p>
+                        <p><strong>Payment Method:</strong> ${paymentMethod}</p>
+                    </div>
+
+                    <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px;">Shipping Details</h3>
+                    <p><strong>Name:</strong> ${shippingAddress.name}</p>
+                    <p><strong>Email:</strong> ${shippingAddress.email}</p>
+                    <p><strong>Phone:</strong> ${shippingAddress.phone}</p>
+                    <p><strong>Address:</strong><br>
+                    ${shippingAddress.houseNumber}, ${shippingAddress.flatSociety}<br>
+                    ${shippingAddress.address}, ${shippingAddress.city}<br>
+                    ${shippingAddress.state}, ${shippingAddress.country} - ${shippingAddress.postalCode}</p>
+
+                    <p style="text-align: center; margin-top: 30px; font-size: 12px; color: #888;">
+                        Need help? Reply to this email.<br>
+                        &copy; ${new Date().getFullYear()} PixelMart
+                    </p>
+                </div>
+            `;
+
             await sendEmail({
-                email: req.user.email,
-                subject: 'Order Confirmation - PixelMart',
-                message
+                email: shippingAddress.email, // Send to the email provided in shipping address
+                subject: `Order Confirmation - #${createdOrder._id}`,
+                message: `Thank you for your order! Order ID: ${createdOrder._id}. Total: ${totalPrice}`, // Fallback text
+                html: emailHtml
             });
         } catch (emailError) {
             console.error("Email sending failed:", emailError.message);
