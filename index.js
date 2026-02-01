@@ -92,6 +92,15 @@ app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error("GLOBAL ERROR HANDLER:", err);
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    });
+});
+
 // Make uploads public
 app.use('/server/uploads', express.static(path.join(__dirname, '/server/uploads')));
 
