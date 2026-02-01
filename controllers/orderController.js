@@ -35,8 +35,13 @@ exports.addOrderItems = async (req, res) => {
             await product.save();
         }
 
+        const validOrderItems = orderItems.map(item => ({
+            ...item,
+            image: item.image || '/uploads/placeholder.jpg'
+        }));
+
         const order = new Order({
-            orderItems,
+            orderItems: validOrderItems,
             user: req.user._id,
             shippingAddress,
             paymentMethod,
