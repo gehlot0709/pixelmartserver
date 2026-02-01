@@ -165,6 +165,41 @@ exports.createProductReview = async (req, res) => {
     }
 };
 
+// @desc    Update a product
+// @route   PUT /api/products/:id
+// @access  Private/Admin
+exports.updateProduct = async (req, res) => {
+    try {
+        const { title, description, price, category, stock, sizes, colors, deliveryTime, isOffer } = req.body;
+        const product = await Product.findById(req.params.id);
+
+        if (product) {
+            product.title = title || product.title;
+            product.description = description || product.description;
+            product.price = price || product.price;
+            product.category = category || product.category;
+            product.stock = stock || product.stock;
+            product.deliveryTime = deliveryTime || product.deliveryTime;
+            product.isOffer = isOffer === 'true' || isOffer === true;
+
+            if (req.files && req.files.length > 0) {
+                product.images = req.files.map(file => `/uploads/${file.filename}`);
+            }
+
+            product.sizes = sizes ? sizes.split(',') : product.sizes;
+            product.colors = colors ? colors.split(',') : product.colors;
+
+            const updatedProduct = await product.save();
+            res.json(updatedProduct);
+        } else {
+            res.status(404).json({ message: 'Product not found' });
+        }
+    } catch (error) {
+        console.error("Error in updateProduct:", error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
 // @access  Private/Admin
