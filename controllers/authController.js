@@ -56,6 +56,8 @@ exports.registerUser = async (req, res) => {
                 });
             } catch (error) {
                 console.error("Email send failed for existing unverified user:", error);
+                // Log full error for debugging
+                console.error(JSON.stringify(error, null, 2));
                 return res.status(500).json({ message: 'Email could not be sent. Please check credentials.' });
             }
         }
@@ -239,6 +241,7 @@ exports.resendOTP = async (req, res) => {
             console.error(error);
             // If email fails, we still want to save the OTP ideally, but user can't get it.
             // For now, return error.
+            console.error("Resend OTP Email failed:", error);
             res.status(500).json({ message: 'Email could not be sent' });
         }
 
@@ -281,10 +284,11 @@ exports.forgotPassword = async (req, res) => {
             });
             res.status(200).json({ message: 'OTP sent to email' });
         } catch (error) {
+            console.error("Forgot Password Email failed:", error);
             user.resetPasswordOtp = undefined;
             user.resetPasswordExpire = undefined;
             await user.save();
-            return res.status(500).json({ message: 'Email could not be sent' });
+            return res.status(500).json({ message: 'Email could not be sent. Please check server logs.' });
         }
     } catch (error) {
         console.error(error);
@@ -336,7 +340,7 @@ exports.changePassword = async (req, res) => {
             res.status(401).json({ message: 'Invalid current password' });
         }
     } catch (error) {
-        console.error(error);
+        console.error("Change Password Error:", error);
         res.status(500).json({ message: 'Server error' });
     }
 };
