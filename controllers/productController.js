@@ -47,7 +47,8 @@ exports.getProducts = async (req, res) => {
         if (sort === 'rating') sortOption.averageRating = -1;
 
         // Pagination
-        const pageSize = 12;
+        const { limit: queryLimit } = req.query;
+        const pageSize = Number(queryLimit) || 12;
         const page = Number(pageNumber) || 1;
 
         const count = await Product.countDocuments(query);
@@ -57,7 +58,7 @@ exports.getProducts = async (req, res) => {
             .skip(pageSize * (page - 1))
             .populate('category', 'name');
 
-        res.json({ products, page, pages: Math.ceil(count / pageSize) });
+        res.json({ products, page, pages: Math.ceil(count / pageSize), total: count });
     } catch (error) {
         console.error("Error in getProducts:", error);
         res.status(500).json({ message: 'Server Error', error: error.message });
