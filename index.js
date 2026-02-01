@@ -32,6 +32,16 @@ connectDB();
 
 // Middleware
 app.use(express.json());
+
+// Enable Private Network Access (CORS Loopback)
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Access-Control-Allow-Private-Network');
+    }
+    next();
+});
+
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
