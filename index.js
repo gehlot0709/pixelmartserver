@@ -1,5 +1,18 @@
 require('dotenv').config();
 const express = require('express');
+
+// process.on('uncaughtException', (err) => {
+//     console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+//     console.error(err.name, err.message);
+//     console.error(err.stack);
+//     process.exit(1);
+// });
+
+process.on('unhandledRejection', (err) => {
+    console.error('UNHANDLED REJECTION! 💥');
+    console.error(err.name, err.message);
+    // process.exit(1); // Don't exit immediately during debug
+});
 const cors = require('cors');
 const connectDB = require('./config/db');
 const path = require('path');
@@ -8,7 +21,12 @@ const path = require('path');
 const app = express();
 
 // Connect to Database
-// connectDB(); // Removed immediate call, using middleware instead
+connectDB();
+
+// Keep process alive for debugging
+// setInterval(() => {
+//     // console.log('Heartbeat...'); 
+// }, 10000);
 
 // DB Connection Middleware moved after CORS
 
