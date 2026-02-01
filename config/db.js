@@ -14,7 +14,7 @@ const connectDB = async () => {
 
     if (!cached.promise) {
         const opts = {
-            bufferCommands: false, // Disable buffering to fail fast on connection errors
+            bufferCommands: true, // Re-enable buffering (safer)
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             family: 4 // Force IPv4

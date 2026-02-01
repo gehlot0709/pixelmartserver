@@ -8,7 +8,18 @@ const path = require('path');
 const app = express();
 
 // Connect to Database
-connectDB();
+// connectDB(); // Removed immediate call, using middleware instead
+
+// DB Connection Middleware
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error("Database Connection Error:", error);
+        res.status(500).json({ message: "Database Connection Failed", error: error.message });
+    }
+});
 
 // Middleware
 app.use(express.json());
