@@ -10,16 +10,7 @@ const app = express();
 // Connect to Database
 // connectDB(); // Removed immediate call, using middleware instead
 
-// DB Connection Middleware
-app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();
-    } catch (error) {
-        console.error("Database Connection Error:", error);
-        res.status(500).json({ message: "Database Connection Failed", error: error.message });
-    }
-});
+// DB Connection Middleware moved after CORS
 
 // Middleware
 app.use(express.json());
@@ -46,6 +37,17 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// DB Connection Middleware (Executed after CORS to ensure headers are present on error)
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error("Database Connection Error:", error);
+        res.status(500).json({ message: "Database Connection Failed", error: error.message });
+    }
+});
 
 // Static folder for uploads (if needed later)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
