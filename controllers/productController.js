@@ -13,21 +13,45 @@ exports.getProducts = async (req, res) => {
         let query = {};
 
         if (keyword) {
-            // Find categories that match the keyword to include them in search
-            const matchingCategories = await Category.find({
-                name: { $regex: keyword, $options: 'i' }
-            });
-            const matchingCategoryIds = matchingCategories.map(c => c._id);
+            const tokens = keyword.toLowerCase().trim().split(/\s+/);
+            const synonymMap = {
+                'mans': 'men', 'man': 'men', 'mens': 'men', 'male': 'men',
+                'womans': 'women', 'woman': 'women', 'womens': 'women', 'female': 'women',
+                'kids': 'kid', 'child': 'kid', 'children': 'kid'
+            };
 
-            // Find subcategories of those matching categories
-            const subCategoriesOfMatches = await Category.find({ parent: { $in: matchingCategoryIds } });
-            const allRelatedCatIds = [...matchingCategoryIds, ...subCategoriesOfMatches.map(c => c._id)];
+            // We want products that match ALL tokens (AND across tokens)
+            const tokenFilters = await Promise.all(tokens.map(async (token) => {
+                const searchTerms = [token];
+                if (synonymMap[token]) {
+                    searchTerms.push(synonymMap[token]);
+                }
 
-            query.$or = [
-                { title: { $regex: keyword, $options: 'i' } },
-                { description: { $regex: keyword, $options: 'i' } },
-                { category: { $in: allRelatedCatIds } }
-            ];
+                // Find categories matching this specific token exactly
+                const matchingCategories = await Category.find({
+                    $or: searchTerms.map(term => ({
+                        name: { $regex: `^${term}$`, $options: 'i' }
+                    }))
+                });
+                const matchingCategoryIds = matchingCategories.map(c => c._id);
+
+                // Find subcategories
+                const subCategoriesOfMatches = await Category.find({ parent: { $in: matchingCategoryIds } });
+                const allRelatedCatIds = [...matchingCategoryIds, ...subCategoriesOfMatches.map(c => c._id)];
+
+                // Return a filter for THIS token
+                return {
+                    $or: [
+                        { title: { $regex: token, $options: 'i' } },
+                        { description: { $regex: token, $options: 'i' } },
+                        { category: { $in: allRelatedCatIds } }
+                    ]
+                };
+            }));
+
+            if (tokenFilters.length > 0) {
+                query.$and = tokenFilters;
+            }
         }
 
         if (category) {
