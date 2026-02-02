@@ -13,7 +13,21 @@ exports.getProducts = async (req, res) => {
         let query = {};
 
         if (keyword) {
-            query.title = { $regex: keyword, $options: 'i' };
+            // Find categories that match the keyword to include them in search
+            const matchingCategories = await Category.find({
+                name: { $regex: keyword, $options: 'i' }
+            });
+            const matchingCategoryIds = matchingCategories.map(c => c._id);
+
+            // Find subcategories of those matching categories
+            const subCategoriesOfMatches = await Category.find({ parent: { $in: matchingCategoryIds } });
+            const allRelatedCatIds = [...matchingCategoryIds, ...subCategoriesOfMatches.map(c => c._id)];
+
+            query.$or = [
+                { title: { $regex: keyword, $options: 'i' } },
+                { description: { $regex: keyword, $options: 'i' } },
+                { category: { $in: allRelatedCatIds } }
+            ];
         }
 
         if (category) {
