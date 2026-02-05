@@ -13,11 +13,11 @@ const upload = require('../middleware/uploadMiddleware');
 
 router.route('/')
     .get(getProducts)
-    .post(protect, admin, upload.array('images', 5), createProduct);
+    .post(protect, admin, upload.fields([{ name: 'mainImage', maxCount: 1 }, { name: 'images', maxCount: 5 }]), createProduct);
 
 router.route('/:id')
     .get(getProductById)
-    .put(protect, admin, upload.array('images', 5), updateProduct)
+    .put(protect, admin, upload.fields([{ name: 'mainImage', maxCount: 1 }, { name: 'images', maxCount: 5 }]), updateProduct)
     .delete(protect, admin, deleteProduct);
 
 router.route('/:id/reviews')

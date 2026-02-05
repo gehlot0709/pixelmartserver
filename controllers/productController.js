@@ -141,8 +141,15 @@ exports.createProduct = async (req, res) => {
         }
 
         let images = [];
+        let mainImage = '';
+
         if (req.files) {
-            images = req.files.map(file => file.path); // Cloudinary returns the full URL in file.path
+            if (req.files.mainImage && req.files.mainImage[0]) {
+                mainImage = req.files.mainImage[0].path;
+            }
+            if (req.files.images) {
+                images = req.files.images.map(file => file.path);
+            }
         }
 
         const product = new Product({
@@ -152,6 +159,7 @@ exports.createProduct = async (req, res) => {
             category,
             stock: Number(stock),
             images,
+            mainImage,
             sizes: sizes ? (typeof sizes === 'string' ? sizes.split(',') : sizes) : [],
             colors: colors ? (typeof colors === 'string' ? colors.split(',') : colors) : [],
             deliveryTime,
@@ -236,8 +244,13 @@ exports.updateProduct = async (req, res) => {
             product.deliveryTime = deliveryTime || product.deliveryTime;
             product.isOffer = isOffer === 'true' || isOffer === true;
 
-            if (req.files && req.files.length > 0) {
-                product.images = req.files.map(file => file.path); // Cloudinary returns the full URL in file.path
+            if (req.files) {
+                if (req.files.mainImage && req.files.mainImage[0]) {
+                    product.mainImage = req.files.mainImage[0].path;
+                }
+                if (req.files.images && req.files.images.length > 0) {
+                    product.images = req.files.images.map(file => file.path); // Cloudinary returns the full URL in file.path
+                }
             }
 
             if (sizes !== undefined) {

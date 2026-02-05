@@ -32,6 +32,9 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true
     }],
+    mainImage: {
+        type: String
+    },
     sizes: [{
         type: String // S, M, L, XL etc.
     }],
