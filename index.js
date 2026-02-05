@@ -21,7 +21,7 @@ const path = require('path');
 const app = express();
 
 // Connect to Database
-connectDB();
+connectDB().catch(err => console.error("Initial Connection Error:", err));
 
 // Keep process alive for debugging
 // setInterval(() => {
@@ -66,16 +66,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// DB Connection Middleware (Executed after CORS to ensure headers are present on error)
-app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();
-    } catch (error) {
-        console.error("Database Connection Error:", error);
-        res.status(500).json({ message: "Database Connection Failed", error: error.message });
-    }
-});
 
 // Static folder for uploads (if needed later)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -101,7 +91,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Make uploads public (for backward compatibility if needed)
+// Make uploads public
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const PORT = process.env.PORT || 5000;
