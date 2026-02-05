@@ -101,8 +101,8 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Make uploads public
-app.use('/server/uploads', express.static(path.join(__dirname, '/server/uploads')));
+// Make uploads public (for backward compatibility if needed)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const PORT = process.env.PORT || 5000;
 

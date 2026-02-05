@@ -55,3 +55,26 @@ exports.deleteCategory = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+// @desc    Migrate category images from localhost to relative paths
+// @route   GET /api/categories/migrate
+// @access  Private/Admin
+exports.migrateCategories = async (req, res) => {
+    try {
+        const categories = await Category.find({});
+        let updatedCount = 0;
+
+        for (let cat of categories) {
+            if (cat.image && cat.image.includes('localhost:5000/uploads/categories/')) {
+                const filename = cat.image.split('/').pop();
+                cat.image = `/assets/categories/${filename}`;
+                await cat.save();
+                updatedCount++;
+            }
+        }
+
+        res.json({ message: `Migration complete. Updated ${updatedCount} categories.` });
+    } catch (error) {
+        console.error("Error in migrateCategories:", error);
+        res.status(500).json({ message: 'Migration Failed', error: error.message });
+    }
+};
