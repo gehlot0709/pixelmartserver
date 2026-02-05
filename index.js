@@ -67,8 +67,37 @@ app.use(cors({
 }));
 
 
-// Static folder for uploads (if needed later)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// DB Connection Middleware (Ensuring connection for serverless)
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error("DB Middleware Error:", error);
+        res.status(500).json({ message: "Database connection failed", error: error.message });
+    }
+});
+
+// Status/Diagnostics Route
+app.get('/api/status', async (req, res) => {
+    const status = {
+        server: "online",
+        hasMongoUri: !!process.env.MONGO_URI,
+        nodeEnv: process.env.NODE_ENV || "development"
+    };
+
+    try {
+        const mongoose = require('mongoose');
+        status.dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+    } catch (e) {
+        status.dbError = e.message;
+    }
+
+    res.json(status);
+});
+
+// Static folder for public assets (if needed, but frontend public is preferred)
+app.use('/assets', express.static(path.join(__dirname, 'public/assets')));
 
 // Basic Route
 app.get('/', (req, res) => {
@@ -87,6 +116,7 @@ app.use((err, req, res, next) => {
     console.error("GLOBAL ERROR HANDLER:", err);
     res.status(err.status || 500).json({
         message: err.message || 'Internal Server Error',
+        error: process.env.NODE_ENV === 'production' ? 'Hidden' : err.message,
         stack: process.env.NODE_ENV === 'production' ? null : err.stack
     });
 });
