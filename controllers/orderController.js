@@ -195,6 +195,34 @@ exports.updateOrderToDelivered = async (req, res) => {
     }
 };
 
+// @desc    Update order status
+// @route   PUT /api/orders/:id/status
+// @access  Private/Admin
+exports.updateOrderStatus = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (order) {
+            order.status = req.body.status || order.status;
+            if (req.body.status === 'Delivered') {
+                order.isDelivered = true;
+                order.deliveredAt = Date.now();
+            }
+            if (req.body.status === 'Paid') {
+                order.isPaid = true;
+                order.paidAt = Date.now();
+            }
+
+            const updatedOrder = await order.save();
+            res.json(updatedOrder);
+        } else {
+            res.status(404).json({ message: 'Order not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 // @desc    Get logged in user orders
 // @route   GET /api/orders/myorders
 // @access  Private
@@ -224,29 +252,66 @@ exports.getOrders = async (req, res) => {
 // @access  Private/Admin
 exports.getSalesStats = async (req, res) => {
     try {
-        const date = new Date();
-        const lastMonth = new Date(date.setMonth(date.getMonth() - 1));
-        const previousMonth = new Date(new Date().setMonth(lastMonth.getMonth() - 1));
-
-        // Monthly Sales (Simple aggregation)
-        // This is a simplified example. Real aggregation might need $group by month/year.
-
         // Total Sales & Count
         const totalOrders = await Order.countDocuments();
-        const totalSales = await Order.aggregate([
+        const totalSalesSum = await Order.aggregate([
             { $group: { _id: null, total: { $sum: '$totalPrice' } } }
         ]);
 
-        // Highest selling product
-        const topProducts = await Product.find({}).sort({ soldCount: -1 }).limit(5);
+        // Weekly Sales (Last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const weeklySales = await Order.aggregate([
+            { $match: { createdAt: { $gte: sevenDaysAgo } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    sales: { $sum: "$totalPrice" }
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Monthly Sales (Last 6 months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        const monthlySales = await Order.aggregate([
+            { $match: { createdAt: { $gte: sixMonthsAgo } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                    sales: { $sum: "$totalPrice" }
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Top Selling Products (by quantity)
+        const topProductsData = await Order.aggregate([
+            { $unwind: "$orderItems" },
+            {
+                $group: {
+                    _id: "$orderItems.product",
+                    totalQty: { $sum: "$orderItems.qty" },
+                    title: { $first: "$orderItems.name" },
+                    image: { $first: "$orderItems.image" }
+                }
+            },
+            { $sort: { totalQty: -1 } },
+            { $limit: 5 }
+        ]);
 
         res.json({
             totalOrders,
-            totalSales: totalSales[0] ? totalSales[0].total : 0,
-            topProducts
+            totalSales: totalSalesSum[0] ? totalSalesSum[0].total : 0,
+            weeklySales: weeklySales.map(item => ({ name: item._id, sales: item.sales })),
+            monthlySales: monthlySales.map(item => ({ name: item._id, sales: item.sales })),
+            topProducts: topProductsData
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error in getSalesStats:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

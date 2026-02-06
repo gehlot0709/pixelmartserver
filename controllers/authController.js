@@ -344,3 +344,38 @@ exports.changePassword = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+// @desc    Get all users
+// @route   GET /api/auth/users
+// @access  Private/Admin
+exports.getUsers = async (req, res) => {
+    try {
+        const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+        res.json(users);
+    } catch (error) {
+        console.error("Get Users Error:", error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Update user status (Block/Unblock)
+// @route   PUT /api/auth/users/:id/status
+// @access  Private/Admin
+exports.updateUserStatus = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (user) {
+            if (user.role === 'admin') {
+                return res.status(400).json({ message: 'Cannot block an admin' });
+            }
+            user.isBlocked = !user.isBlocked;
+            await user.save();
+            res.json({ message: `User ${user.isBlocked ? 'blocked' : 'unblocked'} successfully`, user });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error("Update User Status Error:", error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

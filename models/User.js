@@ -38,7 +38,11 @@ const userSchema = new mongoose.Schema({
     orders: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order'
-    }]
+    }],
+    isBlocked: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true });
 
 // Hash password before saving
