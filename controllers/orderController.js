@@ -303,12 +303,16 @@ exports.getSalesStats = async (req, res) => {
             { $limit: 5 }
         ]);
 
+        // Low Stock Count (Global)
+        const lowStockCount = await Product.countDocuments({ stock: { $lte: 5 } });
+
         res.json({
             totalOrders,
             totalSales: totalSalesSum[0] ? totalSalesSum[0].total : 0,
             weeklySales: weeklySales.map(item => ({ name: item._id, sales: item.sales })),
             monthlySales: monthlySales.map(item => ({ name: item._id, sales: item.sales })),
-            topProducts: topProductsData
+            topProducts: topProductsData,
+            lowStockCount
         });
     } catch (error) {
         console.error("Error in getSalesStats:", error);
