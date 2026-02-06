@@ -293,3 +293,83 @@ exports.deleteProduct = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+// @desc    Get recommended products (Same category, similar price +/- 20%)
+// @route   GET /api/products/recommend/:productId
+// @access  Public
+exports.getRecommendedProducts = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.productId);
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        let recommended = [];
+        const mongoose = require('mongoose');
+
+        // Check if category is a valid ObjectId before querying
+        if (mongoose.Types.ObjectId.isValid(product.category)) {
+            const minPrice = product.price * 0.8;
+            const maxPrice = product.price * 1.2;
+
+            recommended = await Product.find({
+                _id: { $ne: product._id },
+                category: product.category,
+                price: { $gte: minPrice, $lte: maxPrice }
+            }).limit(4);
+
+            // If not enough products, find other products in same category
+            if (recommended.length < 4) {
+                const extra = await Product.find({
+                    _id: { $ne: product._id, $nin: recommended.map(p => p._id) },
+                    category: product.category
+                }).limit(4 - recommended.length);
+                recommended.push(...extra);
+            }
+        } else {
+            console.warn(`Product ${product._id} has invalid category ID: ${product.category}. Skipping category-specific recommendations.`);
+        }
+
+        // Final fallback: if still not enough products, find ANY other products from other categories
+        if (recommended.length < 4) {
+            const finalExtra = await Product.find({
+                _id: { $ne: product._id, $nin: recommended.map(p => p._id) }
+            }).limit(4 - recommended.length);
+            recommended.push(...finalExtra);
+        }
+
+        res.json(recommended);
+    } catch (error) {
+        console.error("Error in getRecommendedProducts:", error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Get delivery estimate based on pincode
+// @route   POST /api/products/estimate-delivery
+// @access  Public
+exports.getDeliveryEstimate = async (req, res) => {
+    try {
+        const { pincode } = req.body;
+        if (!pincode || pincode.length !== 6) {
+            return res.status(400).json({ message: 'Invalid Pincode' });
+        }
+
+        // Metro cities (Delhi, Mumbai, Bengaluru, Chennai, Hyderabad, Kolkata)
+        const metroPrefixes = ['11', '40', '56', '60', '50', '70'];
+        const prefix = pincode.substring(0, 2);
+
+        let estimate = "";
+        if (metroPrefixes.includes(prefix)) {
+            estimate = "2–3 days (Metro Delivery)";
+        } else if (pincode.startsWith('1')) { // assuming some logic for remote
+            estimate = "5–7 days (Remote Area)";
+        } else {
+            estimate = "3–5 days (Standard Delivery)";
+        }
+
+        res.json({ estimate });
+    } catch (error) {
+        console.error("Error in getDeliveryEstimate:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
